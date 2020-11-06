@@ -1,0 +1,30 @@
+<?php
+
+return [
+    'default' => [
+        'driver' => 'memcached',
+        'key_prefix' => env('CACHE_PREFIX'),
+        'servers' => [
+            [
+                'hostname' => env('MEMCACHE_HOST'),
+                'port' => env('MEMCACHE_PORT'),
+                'weight' => '1',
+            ],
+        ],
+    ],
+
+    'file_cache' => [
+        'driver' => 'file',
+        'key_prefix' => env('CACHE_PREFIX'),
+        'servers' => [
+            'cache_path' => env('CACHE_DIR') . '/file_cache/',
+        ],
+    ],
+
+    'redis' => [
+        'driver' => 'redis',
+        'servers' => [
+                     'connection' => 'cache',
+                 ]
+    ],
+];

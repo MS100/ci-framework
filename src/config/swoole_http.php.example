@@ -1,0 +1,51 @@
+<?php
+return [
+    'SwooleManager' => [
+        //启动的worker进程数
+        'worker_num' => 50,
+
+        //设置worker进程的最大任务数，默认为0，一个worker进程在处理完超过此数值的任务后将自动退出，进程退出后会释放所有内存和资源。
+        //这个参数的主要作用是解决PHP进程内存溢出问题
+        'max_request' => 500,
+
+        //监测到代码更新重启服务
+        'auto_update' => 0,
+
+        //守护进程化。设置daemonize = 1时，程序将转入后台作为守护进程运行。长时间运行的服务器端程序必须启用此项。
+        'daemonize' => 1,
+
+        //Listen队列长度，如backlog => 128，此参数将决定最多同时有多少个等待accept的连接。一般用不上
+        //backlog = 128
+
+        //指定swoole错误日志文件
+        'log_file' => '/opt/log/' . APP_NAME . '/swoole_http.log',
+
+        //错误日志打印的等级
+        //0 =>DEBUG 1 =>TRACE 2 =>INFO 3 =>NOTICE 4 =>WARNING 5 =>ERROR
+        'log_level' => 2,
+
+        //设置worker/task子进程的所属用户
+        'user' => 'nobody',
+
+        //在Server启动时自动将master进程的PID写入到文件，在Server关闭时自动删除PID文件
+        'pid_file' => '/opt/log/' . APP_NAME . '/swoole_http.pid',
+
+        //绑定的ip
+        'host' => '0.0.0.0',
+
+        //监听的端口
+        'port' => 9502,
+
+        //限制最大包长度，影响文件上传
+        'package_max_length' => 6000000,
+
+        //启用CPU亲和性设置
+        'open_cpu_affinity' => 1,
+
+        //忽略某个核心，查看 cat /proc/interrupts，IO密集型程序中，所有网络中断都是用CPU0来处理，如果网络IO很重，CPU0负载过高会导致网络中断无法及时处理，那网络收发包的能力就会下降。
+        'cpu_affinity_ignore' => [0],
+
+        //启用open_tcp_nodelay，开启后TCP连接发送数据时会关闭Nagle合并算法，立即发往客户端连接。在某些场景下，如http服务器，可以提升响应速度
+        'open_tcp_nodelay' => 1,
+    ]
+];

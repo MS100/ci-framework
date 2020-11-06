@@ -1,0 +1,132 @@
+<?php
+use Monolog\Formatter\LineFormatter;
+use Monolog\Formatter\RotatingFileHandler;
+use Monolog\Processor\MemoryUsageProcessor;
+use Monolog\Processor\ProcessIdProcessor;
+use Monolog\Processor\PsrLogMessageProcessor;
+
+return [
+    'formatters' => [
+        'default' => [
+            'class' => LineFormatter::class,
+            //保证下面的参数顺序与初始化类时相同
+            'format' => "%datetime%  <%channel%>  %level_name%  %extra%  %message%\n",
+            'date' => 'm-d H:i:s',
+        ],
+        'debug' => [
+            'class' => LineFormatter::class,
+            'format' => "%datetime%  <%channel%>  %level_name%  %message%\n",
+            'date' => 'm-d H:i:s',
+        ],
+        'trace' => [
+            'class' => LineFormatter::class,
+            'format' => "%datetime%  <%channel%>  %extra%  %message%\n",
+            'date' => 'm-d H:i:s',
+        ],
+        'simple' => [
+            'class' => LineFormatter::class,
+            'format' => "%datetime%  %extra%  %message%\n",
+            'date' => 'm-d H:i:s',
+        ],
+    ],
+    'handlers' => [
+        'info' => [
+            'class' => RotatingFileHandler::class,
+            'formatter' => 'default',
+            //保证下面的参数顺序与初始化类时相同
+            'file' => env('LOG_DIR') . '/info.log',
+            'max' => 0,
+            'level' => \Monolog\Logger::INFO,
+            'bubble' => false,
+            'permission' => 0666,
+        ],
+        'debug' => [
+            'class' => RotatingFileHandler::class,
+            'formatter' => 'debug',
+            //保证下面的参数顺序与初始化类时相同
+            'file' => env('LOG_DIR') . '/info.log',
+            'max' => 0,
+            'level' => \Monolog\Logger::DEBUG,
+            'bubble' => true,
+            'permission' => 0666,
+        ],
+        'warn' => [
+            'class' => RotatingFileHandler::class,
+            'formatter' => 'default',
+            'file' => env('LOG_DIR') . '/warn.log',
+            'max' => 0,
+            'level' => \Monolog\Logger::WARNING,
+            'bubble' => true,
+            'permission' => 0666,
+        ],
+        'trace' => [
+            'class' => RotatingFileHandler::class,
+            'formatter' => 'trace',
+            'file' => env('LOG_DIR') . '/warn.log',
+            'max' => 0,
+            'level' => \Monolog\Logger::DEBUG,
+            'bubble' => false,
+            'permission' => 0666,
+        ],
+    ],
+    'processors' => [
+        'req_info' => [
+            'function' => function ($record)
+            {
+                $CI = ci();
+                if ($CI instanceof \CI\core\CI && $CI->input instanceof \CI\core\Input) {
+                    $info = $CI->input->get_request_info();
+                    empty($info['log_id']) || $record['extra']['log_id'] = $info['log_id'];
+                    empty($_SERVER['REQUEST_PRODUCT_NAME']) || $record['extra']['from_product'] = $_SERVER['REQUEST_PRODUCT_NAME'];
+                    empty($info['cost']) || $record['extra']['cost'] = $info['cost'];
+                    empty($info['user_ip']) || $record['extra']['user_ip'] = $info['user_ip'];
+                    empty($info['uid']) || $record['extra']['uid'] = $info['uid'];
+                    empty($info['session_id']) || $record['extra']['session_id'] = $info['session_id'];
+                    empty($info['request_api']) || $record['extra']['request_api'] = $info['request_api'];
+                    empty($_SERVER['QUERY_STRING']) || $record['extra']['query'] = $_SERVER['QUERY_STRING'];
+                }
+
+                return $record;
+            },
+        ],
+        'log_id' => [
+            'function' => function ($record)
+            {
+                $CI = ci();
+                if ($CI instanceof \CI\core\CI && $CI->input instanceof \CI\core\Input) {
+                    $info = $CI->input->get_request_info();
+                    empty($info['log_id']) || $record['extra']['log_id'] = $info['log_id'];
+                }
+
+                return $record;
+            },
+        ],
+        'app_info' => [
+            'function' => function ($record)
+            {
+                $record['extra']['app'] = APP_NAME . '_' . SERVER_SOURCE;
+                return $record;
+            },
+        ],
+        'memory' => [
+            'class' => MemoryUsageProcessor::class,
+        ],
+        'pid' => [
+            'class' => ProcessIdProcessor::class,
+        ],
+        'psr' => [
+            'class' => PsrLogMessageProcessor::class,
+        ],
+
+    ],
+    'loggers' => [
+        'default' => [
+            'handlers' => ENVIRONMENT == ENV_PROD ? ['warn', 'info'] : ['warn', 'info', 'debug'],
+            'processors' => ['psr', 'req_info', 'pid', 'memory'],
+        ],
+        'trace' => [
+            'handlers' => ['trace'],
+            'processors' => ['log_id'],
+        ],
+    ],
+];

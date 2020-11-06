@@ -1,0 +1,18 @@
+<?php
+
+return [
+    /*//职场简历打标签
+    'zhichang_resume_algorithm' => [
+        'driver' => 'redis',
+        'server' => 'queue', //从config/redis.php中读取
+        'queue' => 'toc.zhichang.resume_algorithm',
+    ],
+    //职场简历刷新
+    'custom_base_resume_flush' => [
+        'driver' => 'rabbitmq',
+        'server' => 'bpc', //从config/rabbitmq.php中读取
+        'exchange' => '',
+        'routing_key' => 'toc.custom_base.resume_flush',
+    ],*/
+];
+

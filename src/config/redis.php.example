@@ -1,0 +1,42 @@
+<?php
+return [
+    'default' => [
+        'key_prefix' => env('REDIS_PREFIX'),
+        'servers' => [
+            'socket_type' => 'tcp', //`tcp` or `unix`
+            //'socket' => '/var/run/redis.sock', // in case of `unix` socket type
+            'host' => env('REDIS_HOST'),
+            'port' => env('REDIS_PORT'),
+            'password' => env('REDIS_PASSWORD'),
+            'database' => env('REDIS_DB'),
+            'connect_timeout' => 5,
+        ],
+    ],
+
+    'queue' => [
+        'key_prefix' => env('REDIS_PREFIX'),
+        'servers' => [
+            'socket_type' => 'tcp', //`tcp` or `unix`
+            //'socket' => '/var/run/redis.sock', // in case of `unix` socket type
+            'host' => env('REDIS_HOST'),
+            'port' => env('REDIS_PORT'),
+            'password' => env('REDIS_PASSWORD'),
+            'database' => env('REDIS_QUEUE_DB'),
+            'connect_timeout' => 5,
+            'read_timeout' => -1,
+        ],
+    ],
+
+    'cache' => [
+        'key_prefix' => env('CACHE_PREFIX'),
+        'servers' => [
+            'socket_type' => 'tcp', //`tcp` or `unix`
+            //'socket' => '/var/run/redis.sock', // in case of `unix` socket type
+            'host' => env('REDIS_HOST'),
+            'port' => env('REDIS_PORT'),
+            'password' => env('REDIS_PASSWORD'),
+            'database' => env('REDIS_CACHE_DB'),
+            'connect_timeout' => 5,
+        ],
+    ],
+];

@@ -1,0 +1,364 @@
+#!/usr/bin/env php
+<?php
+
+namespace CI\generators;
+
+class DaoGenerator
+{
+    protected $config
+        = [
+            'app'   => '',
+            'dir'   => '',
+            'port'  => 3308,
+            'db'    => '',
+            'table' => '',
+        ];
+    protected $parse
+        = [
+            'db'               => '',
+            'table'            => '',
+            'active_group'     => '',
+            'cache'            => true,
+            'insert_fields'    => [],
+            'update_fields'    => [],
+            'select_fields'    => [],
+            'udx'              => [],
+            'idx'              => [],
+            'created_time_key' => null,
+            'updated_time_key' => null,
+            'primary_key'      => null,
+            'auto_pk'          => true,
+        ];
+
+    public function __construct()
+    {
+        $opts = getopt('a:c:d:p:t:hi', ['help']);
+
+        if (empty($opts) || isset($opts['h']) || isset($opts['help'])) {
+            $this->show_help();
+        } elseif (isset($opts['i'])) {
+            $this->interactive();
+        } else {
+            $this->getopt($opts);
+        }
+
+        $this->parse_table(
+            $this->config['port'],
+            $this->config['db'],
+            $this->config['table']
+        );
+
+        $this->view();
+    }
+
+    protected function getopt($opt)
+    {
+        if (!isset($opt['a']) || !self::valid_app($opt['a'])) {
+            $this->show_error('请正确填写的项目名');
+        }
+        $this->config['app'] = $opt['a'];
+
+        if (!isset($opt['c'])) {
+            $opt['c'] = '1';
+        }
+        if (!self::valid_switch($opt['c'])) {
+            $this->show_error('请正确选择是否使用缓存');
+        }
+        $this->parse['cache'] = (bool)$opt['c'];
+
+        if (!isset($opt['d'])) {
+            $opt['d'] = '';
+        }
+        if (!self::valid_dir($opt['d'])) {
+            $this->show_error('请正确填写的目录名');
+        }
+        $this->config['dir'] = $opt['d'];
+
+        if (!isset($opt['p'])) {
+            $opt['p'] = '1';
+        }
+        if (!self::valid_switch($opt['p'])) {
+            $this->show_error('请正确选择开发环境数据库端口');
+        }
+        $arr = [3306, 3308];
+        $this->config['port'] = $arr[intval($opt['p'])];
+
+        if (!isset($opt['t']) || ($pos = strpos($opt['t'], '.')) === false) {
+            $this->show_error('请正确填写的库名.表名');
+        } else {
+            $this->config['db'] = substr($opt['t'], 0, $pos);
+            $this->config['table'] = substr($opt['t'], ++$pos);
+            if (!self::valid_table($this->config['db'])
+                || !self::valid_table(
+                    $this->config['table']
+                )
+            ) {
+                $this->show_error('请填写正确的库名.表名');
+            }
+        }
+    }
+
+    protected function interactive()
+    {
+        $this->config['app'] = $this->interactive_input(
+            '填写项目名',
+            'self::valid_app'
+        );
+
+        $this->config['dir'] = $this->interactive_input(
+            '填写daos目录下的子目录名，默认为空',
+            'self::valid_dir'
+        );
+
+        $this->parse['cache'] = (bool)$this->interactive_input(
+            '选择是否使用缓存(0:不使用/1:使用)，默认1',
+            'self::valid_switch',
+            '1'
+        );
+
+        $index = $this->interactive_input(
+            '选择开发环境数据库端口号(0:3306/1:3308)，默认1',
+            'self::valid_switch',
+            '1'
+        );
+        $arr = [3306, 3308];
+        $this->config['port'] = $arr[intval($index)];
+
+        $this->config['db'] = $this->interactive_input(
+            '填写库名',
+            'self::valid_table'
+        );
+
+        $this->config['table'] = $this->interactive_input(
+            '填写表名',
+            'self::valid_table'
+        );
+    }
+
+    protected static function valid_table($name)
+    {
+        return preg_match('#^(?![_\d])[a-z0-9_]{2,}(?<!_)$#', $name);
+    }
+
+    protected static function valid_app($dir)
+    {
+        return preg_match('#^(?![_\d/])[a-z0-9_/]{2,}(?<!_/)$#', $dir);
+    }
+
+    protected static function valid_dir($dir)
+    {
+        if ($dir === '') {
+            return true;
+        }
+
+        return preg_match('#^(?![_\d/])[a-z0-9_/]{2,}(?<!_/)$#', $dir);
+    }
+
+    protected static function valid_switch($switch)
+    {
+        $switch = intval($switch);
+
+        return in_array($switch, [0, 1]);
+    }
+
+    protected static function valid_yes_no($choice)
+    {
+        return in_array(strtolower($choice), ['y', 'n']);
+    }
+
+    protected function interactive_input($str, $rule_func, $default = null)
+    {
+        do {
+            //提示输入
+            fwrite(STDOUT, '请'.$str.': ');
+            //获取用户输入数据
+            $input = trim(fgets(STDIN));
+            if ($input === '' && isset($default)) {
+                $input = trim($default);
+            }
+        } while (!call_user_func($rule_func, $input)
+        && fwrite(
+            STDOUT,
+            '不符合规则，请重新'
+        ));
+
+        return $input;
+    }
+
+    protected function parse_table($port, $db, $table)
+    {
+        $this->parse['db'] = $db;
+        $this->parse['table'] = $table;
+        $this->parse['active_group'] = $db;
+
+        $mysqli = new \mysqli(
+            '192.168.1.201', 'devuser', 'devuser', $db, $port
+        );
+
+        if (mysqli_connect_errno()) {
+            $this->show_error(
+                sprintf("Connect failed: %s\n", mysqli_connect_error())
+            );
+        }
+
+        $result = $mysqli->query('show keys from '.$table);
+
+        if ($result === false || $result->num_rows == 0) {
+            $this->show_error($table.'表不存在');
+        }
+
+        while ($row = $result->fetch_assoc()) {
+            if ($row['Key_name'] == 'PRIMARY') {
+                if (!isset($this->parse['primary_key'])) {
+                    $this->parse['primary_key'] = $row['Column_name'];
+                } else {
+                    $this->show_error('不支持复合主键');
+                }
+            } elseif ($row['Non_unique'] == 1) {
+                $idx[$row['Key_name']][$row['Seq_in_index']]
+                    = $row['Column_name'];
+            } elseif ($row['Non_unique'] == 0) {
+                $udx[$row['Key_name']][$row['Seq_in_index']]
+                    = $row['Column_name'];
+            }
+        }
+
+        $result->close();
+
+        if (!isset($this->parse['primary_key'])) {
+            $this->show_error('表没有主键');
+        }
+
+        if (!empty($idx)) {
+            foreach ($idx as $i) {
+                ksort($i);
+                $this->parse['idx'][] = array_fill_keys($i, '');
+            }
+        }
+
+        if (!empty($udx)) {
+            foreach ($udx as $u) {
+                ksort($u);
+                $this->parse['udx'][] = array_fill_keys($u, '');
+            }
+        }
+
+        $result = $mysqli->query('desc '.$table);
+        if ($result === false || $result->num_rows == 0) {
+            $this->show_error($table.'表不存在');
+        }
+
+        while ($row = $result->fetch_assoc()) {
+            if ($row['Field'] == $this->parse['primary_key']) {
+                $this->parse['auto_pk'] = $row['Extra'] == 'auto_increment';
+            } elseif ($row['Field'] == 'updated_at') {
+                $this->parse['updated_time_key'] = $row['Field'];
+            } elseif ($row['Field'] == 'created_at') {
+                $this->parse['created_time_key'] = $row['Field'];
+            } elseif (preg_match('#int\b#i', $row['Type'])) {
+                $this->parse['insert_fields'][$row['Field']] = intval(
+                    $row['Default']
+                );
+            } elseif (preg_match('#(?:text|blob)\b#i', $row['Type'])) {
+                $this->parse['insert_fields'][$row['Field']] = '';
+            } elseif (preg_match('#float\b#i', $row['Type'])) {
+                $this->parse['insert_fields'][$row['Field']] = floatval(
+                    $row['Default']
+                );
+            } else {
+                $this->parse['insert_fields'][$row['Field']] = $row['Default'];
+            }
+        }
+
+        $result->close();
+
+        $fields = array_keys($this->parse['insert_fields']);
+
+        $this->parse['update_fields'] = array_fill_keys($fields, '');
+
+        array_unshift($fields, $this->parse['primary_key']);
+        if (isset($this->parse['updated_time_key'])) {
+            $fields[] = $this->parse['updated_time_key'];
+        }
+        if (isset($this->parse['created_time_key'])) {
+            $fields[] = $this->parse['created_time_key'];
+        }
+
+        $this->parse['select_fields'] = $fields;
+
+        $mysqli->close();
+    }
+
+    protected function view()
+    {
+        $app = $this->config['app'];
+        $dir = $this->config['dir'];
+
+        $dir_path = rtrim(dirname(__DIR__, 2).'/'.$app.'/daos/'.$dir, '/');
+        if (file_exists($dir_path)) {
+            if (!is_dir($dir_path)) {
+                $this->show_error('设置的子目录不是一个文件夹');
+            }
+        } else {
+            mkdir($dir_path, 0755, true);
+        }
+        $file_path = $dir_path.'/Dao_'.$this->config['table'].'.php';
+
+        if (file_exists($file_path)) {
+            $index = $this->interactive_input(
+                '选择是否覆盖(Y:覆盖/N:不覆盖)，默认N',
+                'self::valid_yes_no',
+                'n'
+            );
+
+            $arr = ['y' => true, 'n' => false];
+            $over_write = $arr[strtolower($index)];
+        } else {
+            $over_write = true;
+        }
+
+        if ($over_write) {
+            extract($this->parse);
+            ob_start();
+            include(__DIR__.'/Dao_generator.tpl');
+            $content = ob_get_clean();
+
+            file_put_contents($file_path, $content);
+            echo '文件已写入 ', $file_path, PHP_EOL;
+        } else {
+            echo '文件未覆盖，程序退出～', PHP_EOL;
+        }
+    }
+
+    protected function show_error($msg)
+    {
+        if ($msg) {
+            echo "ERROR:\n";
+            echo '  '.wordwrap($msg, 72, "\n  ")."\n\n";
+        }
+        exit();
+    }
+
+    protected function show_help()
+    {
+        echo "Dao Generator script\n";
+        echo "用例:\n";
+        echo "  # ".basename(__FILE__)
+            ." -h | -c CONFIG [-l LOG_FILE] [-d] [-v] [-a] [-P PID_FILE]\n\n";
+        echo "参数:\n";
+        echo "  -a APP_NAME     <required>     项目名\n";
+        echo "  -c SWITCH      <optional>     使用缓存(0:不使用|1:使用)，默认1\n";
+        echo "  -d DIRNAME     <optional>     daos目录下的子目录名，默认为空\n";
+        echo "  -i                            交互模式\n";
+        echo "  -h --help                     帮助\n";
+        echo "  -p PORT        <optional>     开发环境数据库端口(0:3306|1:3308)，默认1\n";
+        echo "  -t DB.TABLE    <required>     库名.表名\n";
+        echo "\n";
+        exit();
+    }
+}
+
+
+error_reporting(-1);
+
+new Dao_generator;

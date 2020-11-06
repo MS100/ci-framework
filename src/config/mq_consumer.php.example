@@ -1,0 +1,22 @@
+<?php
+
+return [
+    /*//职场简历打标签
+    'zhichang_resume_algorithm' => [
+        'driver' => 'redis',
+        'server' => 'queue', //从config/redis.php中读取
+        'queue' => 'toc.zhichang.resume_algorithm',
+        'ack' => true,
+        'rollback_wait' => 200,//秒，此时间后没有成功消费就会回滚
+    ],
+    //职场投递状态同步
+    'zhichang_ats_status_sync' => [
+        'driver' => 'rabbitmq',
+        'server' => 'tob',
+        'queue' => 'toc.ats.notify.zhichang',
+        'ack' => true,
+    ],*/
+];
+
+
+

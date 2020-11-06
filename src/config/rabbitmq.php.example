@@ -1,0 +1,11 @@
+<?php
+
+return [
+    'default' => [
+        'host' => env('RABBITMQ_HOST'),
+        'port' => env('RABBITMQ_PORT'),
+        'login' => env('RABBITMQ_USERNAME'),
+        'password' => env('RABBITMQ_PASSWORD'),
+        'vhost' => env('RABBITMQ_VHOST'),
+    ]
+];

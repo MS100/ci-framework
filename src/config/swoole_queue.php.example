@@ -1,0 +1,24 @@
+<?php
+return [
+    'SwooleManager' => [
+        //设置worker进程的最大任务数，默认为0，一个worker进程在处理完超过此数值的任务后将自动退出，进程退出后会释放所有内存和资源。
+        //这个参数的主要作用是解决PHP进程内存溢出问题
+        'max_request' => 5000,
+
+        //守护进程化。设置daemonize = 1时，程序将转入后台作为守护进程运行。长时间运行的服务器端程序必须启用此项。
+        'daemonize' => 0,
+
+        //设置worker/task子进程的所属用户
+        'user' => 'nobody',
+
+        //在Server启动时自动将master进程的PID写入到文件，在Server关闭时自动删除PID文件
+        'pid_file' => '/opt/log/' . APP_NAME . '/swoole_queue.pid',
+    ],
+    '消费者进程名' => [
+        'mq_consumer' => '消费的队列名 mq_consumer.php 里的 key',
+        //消费者进程数量
+        'process_num' => 2,
+        //回调函数
+        'callback' => 'grab_resume/run',
+    ],
+];

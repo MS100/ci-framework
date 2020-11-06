@@ -1,0 +1,14 @@
+<?php
+
+return [
+    'lifetime'        => env('SESSION_LIFETIME'), //分钟
+    'expire_on_close' => false,
+    'driver'          => env('SESSION_DRIVER'),
+    'cookie'          => env('SESSION_COOKIE'),
+    'domain'          => '',
+    'path'            => '/',
+    'secure'          => false,
+    'http_only'       => true,
+    'store'           => \Illuminate\Session\Store::class,
+];
+
