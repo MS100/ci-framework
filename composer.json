@@ -1,9 +1,13 @@
 {
   "name": "bpc/ci-framework",
+  "type": "library",
   "description": "the framework evolved from ci",
+  "keywords": ["ci", "framework"],
+  "homepage": "https://github.com/MS100/ci-framework",
   "authors": [
     {
-      "name": "BPC Dev Team"
+      "name": "Mengshuai",
+      "email": "ms1.0@qq.com"
     }
   ],
   "license": "MIT",
@@ -21,13 +25,13 @@
     "ext-pcntl": "*",
     "ext-redis": "*",
     "ext-swoole": "~4.3",
-    "bpc/form-validation": "^20.4",
     "codeigniter/framework": "^3.1",
     "illuminate/container": "^6.0",
     "illuminate/session": "^6.0",
     "illuminate/support": "^6.0",
     "mongodb/mongodb": "^1.5",
     "monolog/monolog": "^1.23|^2.0",
+    "ms100/form-validation": "^1.1",
     "psr/log": "^1.1",
     "psr/simple-cache": "^1.0",
     "vlucas/phpdotenv": "^3.3"
@@ -45,11 +49,5 @@
       "vendor/codeigniter/framework/system/libraries/",
       "vendor/codeigniter/framework/system/database/"
     ]
-  },
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "http://composer-packages.jijigong.com"
-    }
-  ]
+  }
 }

@@ -3,7 +3,7 @@
 namespace CI\libraries;
 
 
-class FormValidation extends \Bpc\FormValidation\FormValidation
+class FormValidation extends \Ms100\FormValidation\FormValidation
 {
 
     public static function getRequestInstance(string $group = '')
